@@ -1,0 +1,680 @@
+/* ========================================================================
+   Wolof Njaay Neena — feuille de style
+   Palette : nuit de Dakar (fond), sable/parchemin (carte), or de Casamance
+   (accent), terre rouge (accent secondaire), vert profond (détails).
+   Police d'affichage : Fraunces (citations) — Police d'interface : Work Sans.
+   ======================================================================== */
+
+:root {
+  --night: #1c2b33;
+  --night-2: #223640;
+  --night-3: #16232a;
+  --parchment: #f1e4c6;
+  --parchment-2: #e7d6ae;
+  --ink: #2a2118;
+  --ink-soft: #55483a;
+  --saffron: #e3a23c;
+  --saffron-dim: #c78a2f;
+  --brick: #a8442e;
+  --green: #2f5d50;
+  --cream-text: #f1e4c6;
+  --muted-on-dark: rgba(241, 228, 198, 0.62);
+  --line-on-dark: rgba(241, 228, 198, 0.16);
+  --shadow-soft: 0 10px 30px rgba(10, 15, 18, 0.35);
+  --radius-card: 22px;
+  --radius-sm: 12px;
+  --tab-bar-h: 68px;
+  --safe-b: env(safe-area-inset-bottom, 0px);
+}
+
+* { box-sizing: border-box; }
+
+html, body {
+  margin: 0;
+  padding: 0;
+  height: 100%;
+}
+
+body {
+  background: var(--night);
+  color: var(--cream-text);
+  font-family: "Work Sans", "Segoe UI", system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  overflow-x: hidden;
+}
+
+body::before {
+  /* subtle woven-diamond texture across the whole app background */
+  content: "";
+  position: fixed;
+  inset: 0;
+  background-image:
+    linear-gradient(135deg, rgba(241,228,198,0.035) 25%, transparent 25%, transparent 75%, rgba(241,228,198,0.035) 75%),
+    linear-gradient(45deg, rgba(241,228,198,0.035) 25%, transparent 25%, transparent 75%, rgba(241,228,198,0.035) 75%);
+  background-size: 34px 34px;
+  background-position: 0 0, 17px 17px;
+  pointer-events: none;
+  z-index: 0;
+}
+
+button { font-family: inherit; }
+
+a { color: inherit; }
+
+.visually-hidden {
+  position: absolute;
+  width: 1px; height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+
+/* ---------- App shell ---------- */
+
+.app {
+  position: relative;
+  z-index: 1;
+  max-width: 640px;
+  margin: 0 auto;
+  min-height: 100%;
+  padding-bottom: calc(var(--tab-bar-h) + var(--safe-b) + 18px);
+  display: flex;
+  flex-direction: column;
+}
+
+.app-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 22px 20px 6px;
+}
+
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.brand-mark {
+  width: 38px;
+  height: 38px;
+  flex-shrink: 0;
+}
+
+.brand-text h1 {
+  margin: 0;
+  font-family: "Fraunces", Georgia, serif;
+  font-size: 20px;
+  font-weight: 600;
+  letter-spacing: 0.2px;
+  line-height: 1.1;
+}
+
+.brand-text p {
+  margin: 2px 0 0;
+  font-size: 12.5px;
+  color: var(--muted-on-dark);
+}
+
+.icon-btn {
+  width: 42px;
+  height: 42px;
+  border-radius: 50%;
+  border: 1px solid var(--line-on-dark);
+  background: rgba(241, 228, 198, 0.05);
+  color: var(--cream-text);
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+  transition: background 0.15s ease, transform 0.15s ease;
+}
+.icon-btn:hover { background: rgba(241, 228, 198, 0.12); }
+.icon-btn:active { transform: scale(0.94); }
+.icon-btn svg { width: 20px; height: 20px; }
+
+/* ---------- Views / tabs ---------- */
+
+.view {
+  flex: 1;
+  padding: 8px 20px 20px;
+  display: none;
+}
+.view.is-active { display: block; animation: view-in 0.25s ease; }
+
+@keyframes view-in {
+  from { opacity: 0; transform: translateY(6px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* ---------- Home: date + card ---------- */
+
+.today-line {
+  text-align: center;
+  color: var(--muted-on-dark);
+  font-size: 13.5px;
+  margin: 2px 0 12px;
+}
+.today-line strong { color: var(--saffron); font-weight: 600; }
+
+.citation-card {
+  position: relative;
+  background: var(--parchment);
+  color: var(--ink);
+  border-radius: var(--radius-card);
+  padding: 30px 26px 26px;
+  box-shadow: var(--shadow-soft);
+  overflow: hidden;
+}
+
+.weave {
+  height: 10px;
+  width: 100%;
+  background-repeat: repeat-x;
+  background-size: 24px 10px;
+}
+.weave-top { margin: -30px -26px 20px; }
+.weave-bottom { margin: 22px -26px -26px; }
+.weave-top, .weave-bottom {
+  background-image: linear-gradient(135deg, var(--brick) 25%, transparent 25%),
+                     linear-gradient(-135deg, var(--brick) 25%, transparent 25%),
+                     linear-gradient(45deg, var(--green) 25%, transparent 25%),
+                     linear-gradient(-45deg, var(--green) 25%, transparent 25%);
+  background-position: 0 0, 12px 0, 0 0, 12px 0;
+}
+
+.citation-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11.5px;
+  font-weight: 600;
+  color: var(--green);
+  background: rgba(47, 93, 80, 0.1);
+  border: 1px solid rgba(47, 93, 80, 0.25);
+  padding: 5px 10px;
+  border-radius: 100px;
+  margin-bottom: 14px;
+}
+.citation-badge svg { width: 13px; height: 13px; }
+
+.citation-text {
+  font-family: "Fraunces", Georgia, serif;
+  font-optical-sizing: auto;
+  font-weight: 560;
+  font-size: 26px;
+  line-height: 1.34;
+  margin: 0;
+  min-height: 2.6em;
+}
+
+.citation-translation {
+  margin: 16px 0 0;
+  font-size: 15.5px;
+  line-height: 1.5;
+  color: var(--ink-soft);
+  font-style: italic;
+  border-left: 3px solid var(--saffron);
+  padding-left: 12px;
+}
+
+.citation-empty-hint {
+  font-size: 13px;
+  color: var(--ink-soft);
+  margin-top: 14px;
+}
+
+.card-foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 18px;
+  font-size: 12px;
+  color: var(--ink-soft);
+}
+
+.fav-toggle {
+  border: none;
+  background: none;
+  cursor: pointer;
+  padding: 6px;
+  margin: -6px;
+  color: var(--ink-soft);
+  display: grid;
+  place-items: center;
+  transition: transform 0.15s ease;
+}
+.fav-toggle svg { width: 22px; height: 22px; }
+.fav-toggle.is-active { color: var(--brick); }
+.fav-toggle:active { transform: scale(1.15); }
+
+/* action row */
+
+.actions-row {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 10px;
+  margin-top: 20px;
+}
+
+.action-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 7px;
+  padding: 13px 4px 11px;
+  border-radius: 16px;
+  border: 1px solid var(--line-on-dark);
+  background: rgba(241, 228, 198, 0.045);
+  color: var(--cream-text);
+  cursor: pointer;
+  font-size: 11.5px;
+  transition: background 0.15s ease, transform 0.15s ease, border-color 0.15s ease;
+}
+.action-btn svg { width: 21px; height: 21px; }
+.action-btn:hover { background: rgba(241, 228, 198, 0.1); border-color: rgba(241,228,198,0.28); }
+.action-btn:active { transform: scale(0.96); }
+.action-btn.primary {
+  background: var(--saffron);
+  border-color: var(--saffron);
+  color: var(--night-3);
+  font-weight: 600;
+}
+.action-btn.primary:hover { background: var(--saffron-dim); }
+
+.stats-strip {
+  display: flex;
+  justify-content: center;
+  gap: 18px;
+  margin-top: 22px;
+  padding-top: 16px;
+  border-top: 1px solid var(--line-on-dark);
+}
+.stat {
+  text-align: center;
+}
+.stat b {
+  display: block;
+  font-family: "Fraunces", serif;
+  font-size: 19px;
+  color: var(--saffron);
+}
+.stat span {
+  font-size: 11px;
+  color: var(--muted-on-dark);
+}
+
+.reset-line {
+  text-align: center;
+  margin-top: 18px;
+}
+.reset-line button {
+  background: none;
+  border: none;
+  color: var(--muted-on-dark);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  font-size: 12.5px;
+  cursor: pointer;
+}
+.reset-line button:hover { color: var(--cream-text); }
+
+/* ---------- Explorer ---------- */
+
+.view-title {
+  font-family: "Fraunces", serif;
+  font-size: 22px;
+  margin: 6px 0 4px;
+}
+.view-subtitle {
+  margin: 0 0 16px;
+  color: var(--muted-on-dark);
+  font-size: 13.5px;
+}
+
+.search-box {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: rgba(241, 228, 198, 0.06);
+  border: 1px solid var(--line-on-dark);
+  border-radius: 14px;
+  padding: 12px 14px;
+  margin-bottom: 14px;
+}
+.search-box svg { width: 18px; height: 18px; color: var(--muted-on-dark); flex-shrink: 0; }
+.search-box input {
+  flex: 1;
+  background: none;
+  border: none;
+  outline: none;
+  color: var(--cream-text);
+  font-size: 15px;
+  font-family: inherit;
+}
+.search-box input::placeholder { color: var(--muted-on-dark); }
+
+.results-count {
+  font-size: 12.5px;
+  color: var(--muted-on-dark);
+  margin: 0 0 12px 2px;
+}
+
+.list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.list-item {
+  background: var(--parchment);
+  color: var(--ink);
+  border-radius: var(--radius-sm);
+  padding: 14px 16px;
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+}
+
+.list-item .li-text { flex: 1; }
+
+.list-item p.li-citation {
+  margin: 0;
+  font-family: "Fraunces", serif;
+  font-size: 16.5px;
+  line-height: 1.42;
+}
+.list-item p.li-trad {
+  margin: 6px 0 0;
+  font-size: 13px;
+  font-style: italic;
+  color: var(--ink-soft);
+}
+
+.list-item .fav-toggle { color: var(--ink-soft); }
+.list-item .fav-toggle.is-active { color: var(--brick); }
+
+.load-more-btn {
+  display: block;
+  width: 100%;
+  margin-top: 14px;
+  padding: 13px;
+  border-radius: 14px;
+  border: 1px dashed var(--line-on-dark);
+  background: none;
+  color: var(--cream-text);
+  font-size: 13.5px;
+  cursor: pointer;
+}
+.load-more-btn:hover { background: rgba(241,228,198,0.06); }
+
+.empty-state {
+  text-align: center;
+  padding: 40px 10px;
+  color: var(--muted-on-dark);
+}
+.empty-state svg { width: 40px; height: 40px; opacity: 0.5; margin-bottom: 10px; }
+.empty-state p { margin: 0; font-size: 14px; }
+
+/* ---------- About ---------- */
+
+.about-block {
+  background: rgba(241, 228, 198, 0.05);
+  border: 1px solid var(--line-on-dark);
+  border-radius: 16px;
+  padding: 18px;
+  margin-bottom: 14px;
+  font-size: 14.5px;
+  line-height: 1.6;
+  color: var(--muted-on-dark);
+}
+.about-block h3 {
+  margin: 0 0 8px;
+  font-family: "Fraunces", serif;
+  font-size: 16px;
+  color: var(--cream-text);
+  font-weight: 600;
+}
+.about-block a { color: var(--saffron); }
+
+/* ---------- Tab bar ---------- */
+
+.tab-bar {
+  position: fixed;
+  left: 0; right: 0; bottom: 0;
+  z-index: 5;
+  display: flex;
+  justify-content: center;
+}
+
+.tab-bar-inner {
+  width: 100%;
+  max-width: 640px;
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  background: rgba(22, 35, 42, 0.92);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  border-top: 1px solid var(--line-on-dark);
+  padding-bottom: var(--safe-b);
+}
+
+.tab-btn {
+  background: none;
+  border: none;
+  color: var(--muted-on-dark);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: 11px 4px 9px;
+  font-size: 11px;
+  cursor: pointer;
+  position: relative;
+}
+.tab-btn svg { width: 22px; height: 22px; }
+.tab-btn.is-active { color: var(--saffron); }
+.tab-btn.is-active::before {
+  content: "";
+  position: absolute;
+  top: 2px;
+  width: 22px;
+  height: 3px;
+  border-radius: 3px;
+  background: var(--saffron);
+}
+
+/* ---------- Toast ---------- */
+
+.toast {
+  position: fixed;
+  left: 50%;
+  bottom: calc(var(--tab-bar-h) + var(--safe-b) + 16px);
+  transform: translateX(-50%) translateY(10px);
+  background: var(--parchment);
+  color: var(--ink);
+  padding: 12px 18px;
+  border-radius: 100px;
+  font-size: 13.5px;
+  font-weight: 500;
+  box-shadow: var(--shadow-soft);
+  z-index: 20;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.2s ease, transform 0.2s ease;
+}
+.toast.is-visible {
+  opacity: 1;
+  transform: translateX(-50%) translateY(0);
+}
+
+/* ---------- Install banner ---------- */
+
+.install-banner {
+  margin: 0 20px 4px;
+  display: none;
+  align-items: center;
+  gap: 12px;
+  background: linear-gradient(135deg, rgba(227,162,60,0.16), rgba(47,93,80,0.16));
+  border: 1px solid rgba(227,162,60,0.35);
+  border-radius: 16px;
+  padding: 12px 14px;
+}
+.install-banner.is-visible { display: flex; }
+.install-banner p {
+  flex: 1;
+  margin: 0;
+  font-size: 12.5px;
+  color: var(--cream-text);
+  line-height: 1.4;
+}
+.install-banner button.install-cta {
+  background: var(--saffron);
+  color: var(--night-3);
+  border: none;
+  font-weight: 600;
+  font-size: 12.5px;
+  padding: 9px 13px;
+  border-radius: 100px;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.install-banner button.dismiss {
+  background: none;
+  border: none;
+  color: var(--muted-on-dark);
+  cursor: pointer;
+  padding: 4px;
+}
+.install-banner button.dismiss svg { width: 16px; height: 16px; display: block; }
+
+/* ---------- Share card canvas (offscreen) ---------- */
+
+#share-canvas { display: none; }
+
+/* ---------- 100 % mobile : comportements d'application native ---------- */
+
+html {
+  -webkit-text-size-adjust: 100%;
+  -webkit-tap-highlight-color: transparent;
+  overscroll-behavior-y: none;   /* pas de rebond / pull-to-refresh du navigateur */
+}
+
+body {
+  min-height: 100vh;
+  min-height: 100dvh;            /* hauteur réelle malgré la barre d'adresse mobile */
+  touch-action: manipulation;    /* supprime le délai et le zoom au double-tap */
+  -webkit-user-select: none;
+  user-select: none;             /* évite les sélections accidentelles en touchant */
+  -webkit-touch-callout: none;
+}
+
+.citation-text,
+.citation-translation,
+.li-citation,
+.li-trad,
+.search-box input {
+  -webkit-user-select: text;
+  user-select: text;             /* le texte des léebu reste sélectionnable */
+}
+
+/* Zones sécurisées (encoche, barre d'état translucide iPhone) */
+.app-header {
+  padding-top: calc(22px + env(safe-area-inset-top, 0px));
+  padding-left: calc(20px + env(safe-area-inset-left, 0px));
+  padding-right: calc(20px + env(safe-area-inset-right, 0px));
+}
+.view {
+  padding-left: calc(20px + env(safe-area-inset-left, 0px));
+  padding-right: calc(20px + env(safe-area-inset-right, 0px));
+}
+
+/* 16 px minimum : empêche le zoom automatique d'iOS dans le champ de recherche */
+.search-box input { font-size: 16px; }
+
+/* Cibles tactiles confortables (≥ 44 px) */
+.icon-btn { width: 44px; height: 44px; }
+.tab-btn { min-height: 56px; }
+.fav-toggle { padding: 10px; margin: -10px; }
+
+/* Retour visuel immédiat au toucher */
+.action-btn:active,
+.tab-btn:active,
+.list-item:active { transform: scale(0.97); }
+
+/* Le geste de balayage ne doit pas faire défiler la page en travers */
+.citation-card { touch-action: pan-y; transition: transform 0.18s ease, opacity 0.18s ease; }
+.citation-card.is-swiping-out { opacity: 0; }
+
+.swipe-hint {
+  text-align: center;
+  margin: 12px 0 0;
+  font-size: 12px;
+  color: var(--muted-on-dark);
+}
+
+/* Sur grand écran : l'app reste une colonne de téléphone centrée */
+@media (min-width: 560px) {
+  body { background: #0f1a20; }
+  .app {
+    max-width: 440px;
+    min-height: 100vh;
+    min-height: 100dvh;
+    background: var(--night);
+    box-shadow: 0 0 0 1px var(--line-on-dark), 0 20px 60px rgba(0, 0, 0, 0.5);
+  }
+  .tab-bar-inner { max-width: 440px; }
+}
+
+/* Mode installé : le bandeau d'installation n'a plus lieu d'être */
+@media (display-mode: standalone) {
+  .install-banner { display: none !important; }
+}
+
+/* Guide d'installation iPhone */
+.ios-guide {
+  position: fixed;
+  inset: 0;
+  z-index: 30;
+  display: none;
+  align-items: flex-end;
+  justify-content: center;
+  background: rgba(10, 15, 18, 0.62);
+}
+.ios-guide.is-visible { display: flex; }
+.ios-guide-sheet {
+  width: 100%;
+  max-width: 440px;
+  background: var(--parchment);
+  color: var(--ink);
+  border-radius: 22px 22px 0 0;
+  padding: 24px 22px calc(24px + env(safe-area-inset-bottom, 0px));
+}
+.ios-guide-sheet h3 {
+  margin: 0 0 12px;
+  font-family: "Fraunces", Georgia, serif;
+  font-size: 20px;
+}
+.ios-guide-sheet ol { margin: 0 0 18px; padding-left: 20px; line-height: 1.7; font-size: 15px; }
+.ios-guide-sheet button {
+  width: 100%;
+  border: none;
+  border-radius: 14px;
+  padding: 14px;
+  background: var(--night);
+  color: var(--cream-text);
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .view.is-active { animation: none; }
+  * { transition: none !important; }
+}
+
+/* Petits écrans en hauteur : garder les boutons d'action visibles */
+@media (max-height: 800px) {
+  .citation-text { font-size: 23px; }
+  .install-banner { padding: 9px 12px; }
+}
