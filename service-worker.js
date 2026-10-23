@@ -4,6 +4,7 @@
    Pensez à changer CACHE_NAME à chaque publication pour nettoyer l'ancien cache. */
 
 var CACHE_NAME = "wolof-njaay-neena-v7";
+var META_CACHE = "njaay-meta"; // état du rappel quotidien, partagé avec js/app.js
 
 var APP_SHELL = [
   "./",
@@ -40,7 +41,7 @@ self.addEventListener("activate", function (event) {
   event.waitUntil(
     caches.keys().then(function (keys) {
       return Promise.all(
-        keys.filter(function (key) { return key !== CACHE_NAME; })
+        keys.filter(function (key) { return key !== CACHE_NAME && key !== META_CACHE; })
             .map(function (key) { return caches.delete(key); })
       );
     }).then(function () { return self.clients.claim(); })
@@ -69,6 +70,58 @@ self.addEventListener("fetch", function (event) {
       });
     })
   );
+});
+
+/* ---------------- Rappel quotidien (Android, app installée) ----------------
+   Le téléphone réveille le service worker environ une fois par jour. Le léebu choisi
+   est le même que dans l'app : hashString(AAAA-M-J) % nombre de léebu (voir js/app.js). */
+
+function hashString(str) {
+  var h = 0;
+  for (var i = 0; i < str.length; i++) {
+    h = (h << 5) - h + str.charCodeAt(i);
+    h |= 0;
+  }
+  return Math.abs(h);
+}
+
+function todayKey() {
+  var d = new Date();
+  return d.getFullYear() + "-" + (d.getMonth() + 1) + "-" + d.getDate();
+}
+
+function metaUrl(name) {
+  return new URL("__njaay/" + name, self.registration.scope).href;
+}
+
+function sendDailyLeebu() {
+  var key = todayKey();
+  return caches.open(META_CACHE).then(function (meta) {
+    return Promise.all([meta.match(metaUrl("daily-on")), meta.match(metaUrl("last-notified"))]).then(function (r) {
+      if (!r[0]) return; // rappel désactivé
+      return (r[1] ? r[1].text() : Promise.resolve(null)).then(function (last) {
+        if (last === key) return; // déjà envoyé aujourd'hui
+        return fetch("./data/citations.json").catch(function () {
+          return caches.match("./data/citations.json", { ignoreSearch: true });
+        }).then(function (res) { return res.json(); }).then(function (citations) {
+          var c = citations[hashString(key) % citations.length];
+          return self.registration.showNotification("Léebu du jour", {
+            body: c.citation + (c.traduction ? "\n« " + c.traduction + " »" : ""),
+            icon: "./assets/icons/icon-192.png",
+            badge: "./assets/icons/icon-192.png",
+            tag: "leebu-du-jour",
+            data: { url: "./?source=notification#accueil" }
+          }).then(function () {
+            return meta.put(metaUrl("last-notified"), new Response(key));
+          });
+        });
+      });
+    });
+  });
+}
+
+self.addEventListener("periodicsync", function (event) {
+  if (event.tag === "leebu-du-jour") event.waitUntil(sendDailyLeebu());
 });
 
 // Toucher la notification d'un léebu : revient sur l'application (ou l'ouvre)

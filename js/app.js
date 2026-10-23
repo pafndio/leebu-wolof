@@ -13,7 +13,7 @@
     lastId: "njaay.lastId.v1",
     installDismissed: "njaay.installDismissed.v1",
     format: "njaay.format.v1",
-    notifAsked: "njaay.notifAsked.v1"
+    dailyOn: "njaay.dailyOn.v1"
   };
 
   var state = {
@@ -359,7 +359,6 @@
         buzz(12);
         setTimeout(function () {
           setCurrent(pickRandomUnseen());
-          notifyLeebu(state.current);
           card.style.transition = "none";
           card.style.transform = "translateX(" + (-dir * 60) + "px)";
           void card.offsetWidth;
@@ -829,8 +828,9 @@
     var card = $("#notif-card");
     var txt = $("#notif-text");
     var btn = $("#notif-btn");
-    if (!pushAppId()) { card.hidden = true; return; }
+    if (!pushAppId()) { renderLocalNotif(); return; }
     card.hidden = false;
+    $("#notif-title").textContent = "Léebu du jour à 9h";
     btn.hidden = false;
     btn.disabled = false;
     btn.classList.remove("is-ghost");
@@ -918,6 +918,7 @@
   }
 
   function onNotifClick() {
+    if (!pushAppId()) { onLocalNotifClick(); return; }
     var btn = $("#notif-btn");
     var action = btn.dataset.action;
     if (push.busy) return;
@@ -961,41 +962,153 @@
     loadPushSdk();
   }
 
-  /* ---------------- Notification à chaque nouveau léebu (locale) ---------------- */
-  /* Aucune donnée n'est envoyée : la notification est créée par le téléphone lui-même.
-     La permission est demandée une seule fois, au premier nouveau léebu. */
+  /* ---------------- Rappel quotidien local (sans OneSignal) ---------------- */
+  /* Quand aucun App ID OneSignal n'est configuré, la carte « Notifications » propose un
+     rappel créé par le téléphone lui-même : le léebu du jour, une fois par jour.
+     - Android (app installée, Chrome) : le service worker est réveillé environ une fois
+       par jour (« periodic background sync »), même app fermée. L'heure exacte est
+       choisie par le téléphone.
+     - Partout ailleurs : la notification part à la première ouverture de la journée.
+     L'état est rangé dans un petit cache partagé avec service-worker.js (même clés). */
+
+  var DAILY_TAG = "leebu-du-jour";
+  var META_CACHE = "njaay-meta";
 
   function localNotifSupported() {
     return "Notification" in window && "serviceWorker" in navigator;
   }
 
-  function showLeebuNotification(c) {
-    var body = c.citation + (c.traduction ? "\n« " + c.traduction + " »" : "");
-    var options = {
-      body: body,
-      icon: "assets/icons/icon-192.png",
-      badge: "assets/icons/icon-192.png",
-      tag: "leebu",
-      renotify: true,
-      data: { url: location.pathname + "#accueil" }
-    };
-    // Sur Android, seul le service worker peut afficher une notification
-    navigator.serviceWorker.ready.then(function (reg) {
-      return reg.showNotification("Léebu n°" + c.id.replace(/^\D+/, "").replace(/\D+$/, ""), options);
+  function dailyEnabled() {
+    try { return localStorage.getItem(STORAGE.dailyOn) === "1"; } catch (e) { return false; }
+  }
+
+  function metaUrl(reg, name) {
+    return new URL("__njaay/" + name, reg.scope).href;
+  }
+
+  function writeMeta(reg, name, value) {
+    if (!("caches" in window)) return Promise.resolve();
+    return caches.open(META_CACHE).then(function (cache) {
+      return value === null ? cache.delete(metaUrl(reg, name)) : cache.put(metaUrl(reg, name), new Response(value));
     }).catch(function () {});
   }
 
-  function notifyLeebu(c) {
-    if (!c || !localNotifSupported()) return;
-    if (Notification.permission === "granted") { showLeebuNotification(c); return; }
-    if (Notification.permission !== "default") return;
-    try {
-      if (localStorage.getItem(STORAGE.notifAsked)) return;
-      localStorage.setItem(STORAGE.notifAsked, "1");
-    } catch (e) {}
-    Promise.resolve(Notification.requestPermission()).then(function (perm) {
-      if (perm === "granted") showLeebuNotification(c);
+  function readMeta(reg, name) {
+    if (!("caches" in window)) return Promise.resolve(null);
+    return caches.open(META_CACHE).then(function (cache) {
+      return cache.match(metaUrl(reg, name));
+    }).then(function (res) { return res ? res.text() : null; }).catch(function () { return null; });
+  }
+
+  function leebuNumber(c) {
+    return c.id.replace(/^\D+/, "").replace(/\D+$/, "");
+  }
+
+  // Affiche le léebu du jour, au plus une fois par jour (le service worker suit la même règle)
+  function sendDailyNotification() {
+    if (!state.citations.length) return Promise.resolve();
+    var c = pickTodaysCitation();
+    var key = todayKey();
+    return navigator.serviceWorker.ready.then(function (reg) {
+      return readMeta(reg, "last-notified").then(function (last) {
+        if (last === key) return;
+        return reg.showNotification("Léebu du jour", {
+          body: c.citation + (c.traduction ? "\n« " + c.traduction + " »" : ""),
+          icon: "assets/icons/icon-192.png",
+          badge: "assets/icons/icon-192.png",
+          tag: DAILY_TAG,
+          data: { url: location.pathname + "?source=notification#accueil" }
+        }).then(function () { return writeMeta(reg, "last-notified", key); });
+      });
     }).catch(function () {});
+  }
+
+  function registerDailySync() {
+    return navigator.serviceWorker.ready.then(function (reg) {
+      if (!reg.periodicSync) return;
+      return reg.periodicSync.register(DAILY_TAG, { minInterval: 12 * 60 * 60 * 1000 });
+    }).catch(function () { /* refusé hors app installée : l'ouverture de l'app prend le relais */ });
+  }
+
+  function setDaily(on) {
+    try {
+      if (on) localStorage.setItem(STORAGE.dailyOn, "1");
+      else localStorage.removeItem(STORAGE.dailyOn);
+    } catch (e) {}
+    return navigator.serviceWorker.ready.then(function (reg) {
+      return writeMeta(reg, "daily-on", on ? "1" : null).then(function () {
+        if (on) return registerDailySync();
+        if (reg.periodicSync) return reg.periodicSync.unregister(DAILY_TAG).catch(function () {});
+      });
+    }).catch(function () {});
+  }
+
+  function renderLocalNotif() {
+    var card = $("#notif-card");
+    var txt = $("#notif-text");
+    var btn = $("#notif-btn");
+    if (!localNotifSupported()) { card.hidden = true; return; }
+    card.hidden = false;
+    $("#notif-title").textContent = "Rappel quotidien";
+    btn.hidden = false;
+    btn.disabled = push.busy;
+    btn.classList.remove("is-ghost");
+    btn.dataset.action = "";
+
+    if (isIOS() && !isStandalone()) {
+      txt.textContent = "Sur iPhone, installez d'abord l'application sur l'écran d'accueil, puis rouvrez-la pour activer le rappel.";
+      btn.textContent = "Voir comment installer";
+      btn.dataset.action = "ios-guide";
+      return;
+    }
+    if (Notification.permission === "denied") {
+      txt.textContent = "Les notifications sont bloquées. Autorisez-les dans les réglages du navigateur pour ce site, puis revenez ici.";
+      btn.hidden = true;
+      return;
+    }
+    if (Notification.permission === "granted" && dailyEnabled()) {
+      txt.textContent = "Actif : chaque jour, le léebu du jour vous arrive en notification.";
+      btn.textContent = "Désactiver";
+      btn.classList.add("is-ghost");
+      btn.dataset.action = "off";
+      return;
+    }
+    txt.textContent = "Recevez chaque jour le léebu du jour en notification sur votre téléphone.";
+    btn.textContent = "Activer le rappel";
+    btn.dataset.action = "on";
+  }
+
+  function onLocalNotifClick() {
+    var action = $("#notif-btn").dataset.action;
+    if (push.busy) return;
+    if (action === "ios-guide") { $("#ios-guide").classList.add("is-visible"); return; }
+    push.busy = true;
+    renderLocalNotif();
+    var job;
+    if (action === "on") {
+      // La demande d'autorisation doit partir directement du toucher de l'utilisateur
+      job = Promise.resolve(Notification.requestPermission()).then(function (perm) {
+        if (perm !== "granted") { showToast("Autorisation non accordée"); return; }
+        return setDaily(true).then(sendDailyNotification).then(function () {
+          buzz(12);
+          showToast("Rappel activé : un léebu chaque jour");
+        });
+      });
+    } else if (action === "off") {
+      job = setDaily(false).then(function () { showToast("Rappel désactivé"); });
+    } else {
+      job = Promise.resolve();
+    }
+    job.catch(function () { showToast("Une erreur est survenue, réessayez"); })
+       .then(function () { push.busy = false; renderLocalNotif(); });
+  }
+
+  // À chaque ouverture : envoie le léebu du jour s'il n'est pas encore parti aujourd'hui
+  function checkDailyOnOpen() {
+    if (pushAppId() || !localNotifSupported()) return;
+    if (!dailyEnabled() || Notification.permission !== "granted") return;
+    registerDailySync();
+    sendDailyNotification();
   }
 
   /* ---------------- Wire up ---------------- */
@@ -1005,7 +1118,6 @@
       buzz(10);
       var c = pickRandomUnseen();
       setCurrent(c);
-      notifyLeebu(c);
     });
     $("#btn-copy").addEventListener("click", copyCurrent);
     $("#btn-share").addEventListener("click", shareTextCurrent);
@@ -1060,6 +1172,7 @@
     loadData().then(function () {
       initHomeCitation();
       runSearch("");
+      checkDailyOnOpen();
       if (/[?&]source=notification/.test(location.search)) {
         showToast("Léebu du jour : touchez Image ou Partager pour l'envoyer");
         try { history.replaceState(history.state, "", location.pathname + location.hash); } catch (e) {}
