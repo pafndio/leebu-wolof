@@ -3,7 +3,7 @@
    Stratégie : le réseau d'abord (les mises à jour arrivent seules), le cache en secours.
    Pensez à changer CACHE_NAME à chaque publication pour nettoyer l'ancien cache. */
 
-var CACHE_NAME = "wolof-njaay-neena-v6";
+var CACHE_NAME = "wolof-njaay-neena-v7";
 
 var APP_SHELL = [
   "./",
@@ -67,6 +67,20 @@ self.addEventListener("fetch", function (event) {
         if (req.mode === "navigate") return caches.match("./index.html");
         return Response.error();
       });
+    })
+  );
+});
+
+// Toucher la notification d'un léebu : revient sur l'application (ou l'ouvre)
+self.addEventListener("notificationclick", function (event) {
+  event.notification.close();
+  var url = (event.notification.data && event.notification.data.url) || "./#accueil";
+  event.waitUntil(
+    self.clients.matchAll({ type: "window", includeUncontrolled: true }).then(function (list) {
+      for (var i = 0; i < list.length; i++) {
+        if ("focus" in list[i]) return list[i].focus();
+      }
+      return self.clients.openWindow(url);
     })
   );
 });

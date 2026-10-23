@@ -12,7 +12,8 @@
     lastDate: "njaay.lastDate.v1",
     lastId: "njaay.lastId.v1",
     installDismissed: "njaay.installDismissed.v1",
-    format: "njaay.format.v1"
+    format: "njaay.format.v1",
+    notifAsked: "njaay.notifAsked.v1"
   };
 
   var state = {
@@ -358,6 +359,7 @@
         buzz(12);
         setTimeout(function () {
           setCurrent(pickRandomUnseen());
+          notifyLeebu(state.current);
           card.style.transition = "none";
           card.style.transform = "translateX(" + (-dir * 60) + "px)";
           void card.offsetWidth;
@@ -959,6 +961,43 @@
     loadPushSdk();
   }
 
+  /* ---------------- Notification à chaque nouveau léebu (locale) ---------------- */
+  /* Aucune donnée n'est envoyée : la notification est créée par le téléphone lui-même.
+     La permission est demandée une seule fois, au premier nouveau léebu. */
+
+  function localNotifSupported() {
+    return "Notification" in window && "serviceWorker" in navigator;
+  }
+
+  function showLeebuNotification(c) {
+    var body = c.citation + (c.traduction ? "\n« " + c.traduction + " »" : "");
+    var options = {
+      body: body,
+      icon: "assets/icons/icon-192.png",
+      badge: "assets/icons/icon-192.png",
+      tag: "leebu",
+      renotify: true,
+      data: { url: location.pathname + "#accueil" }
+    };
+    // Sur Android, seul le service worker peut afficher une notification
+    navigator.serviceWorker.ready.then(function (reg) {
+      return reg.showNotification("Léebu n°" + c.id.replace(/^\D+/, "").replace(/\D+$/, ""), options);
+    }).catch(function () {});
+  }
+
+  function notifyLeebu(c) {
+    if (!c || !localNotifSupported()) return;
+    if (Notification.permission === "granted") { showLeebuNotification(c); return; }
+    if (Notification.permission !== "default") return;
+    try {
+      if (localStorage.getItem(STORAGE.notifAsked)) return;
+      localStorage.setItem(STORAGE.notifAsked, "1");
+    } catch (e) {}
+    Promise.resolve(Notification.requestPermission()).then(function (perm) {
+      if (perm === "granted") showLeebuNotification(c);
+    }).catch(function () {});
+  }
+
   /* ---------------- Wire up ---------------- */
 
   function initEvents() {
@@ -966,6 +1005,7 @@
       buzz(10);
       var c = pickRandomUnseen();
       setCurrent(c);
+      notifyLeebu(c);
     });
     $("#btn-copy").addEventListener("click", copyCurrent);
     $("#btn-share").addEventListener("click", shareTextCurrent);
